@@ -145,6 +145,37 @@ To test your application you will do the following:
 
 Follow the steps in the [Testing and Evaluation](docs/testing.md) document to upload the dataset and create the evaluation job.
 
+## Submission & Evaluation Results
+
+**Student Repository**: [SyedArmanAli2003/aws-c1-prompting-llm-reasoning-nd905-cd14762-project](https://github.com/SyedArmanAli2003/aws-c1-prompting-llm-reasoning-nd905-cd14762-project)  
+**Foundation Model**: `us.amazon.nova-pro-v1:0`  
+**AWS Region**: `us-east-1`  
+**Overall Correctness Score**: **1.00 (100% across all 6 test cases)**
+
+### 1. Verification Highlights
+- **Real Chatbot Bug Report**: Created ticket ID `30780b15-7b3d-493e-a23c-7ff0e553620a` in DynamoDB table `bug-report-tool-stack-bug-reports` via `chat.py` tool call `bugreports___create_bug_report`.
+- **FAQ Handling**: Correctly answered shipping/delivery from FAQ; correctly refused unsupported query (student discount) and redirected to human support `1-800-555-0199`.
+- **Out-of-Scope Requests**: Correctly refused unrelated coding tasks and redirected to `1-800-555-0199`.
+- **Bedrock Evaluation**:
+  - Evaluation Job ARN: `arn:aws:bedrock:us-east-1:673594910195:evaluation-job/b6q1cfp20xmp`
+  - Input Dataset: `s3://udacity-agentic-engineer-c1-eval-673594910195/output_eval_dataset.jsonl`
+  - Metric: Built-in LLM-as-a-judge Correctness -> **1.00**
+
+### 2. Evidence Files
+All evidence screenshots are located in `screenshots/`:
+- `lambda_test_full_evidence.png`
+- `dynamodb_explore_table_items.png` / `dynamodb_ticket_evidence.png`
+- `agentcore_gateway_evidence.png`
+- `agentcore_harness_evidence.png`
+- `bug_report_chat_tool_call.png`
+- `chatbot_ticket_dynamodb.png`
+- `faq_covered.png`
+- `faq_unsupported.png`
+- `other_request.png`
+- `eval_dataset_jsonl.png`
+- `s3_eval_dataset.png`
+- `bedrock_evaluation_result.png`
+
 ## Cleanup
 
 When you are done with the project, delete the AgentCore resources and the CloudFormation stacks to avoid ongoing charges. **Empty the evaluation S3 bucket first** — CloudFormation cannot delete a bucket that still contains objects, so if you skip that step the testing stack ends up in `DELETE_FAILED`:
