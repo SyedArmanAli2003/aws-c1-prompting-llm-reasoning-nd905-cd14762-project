@@ -60,6 +60,7 @@ def invoke_harness_once(
         # Session ids must be >= 33 characters; a fresh one per test case
         # keeps every test independent.
         runtimeSessionId=f"{uuid.uuid4()}-evalcase",
+        actorId=f"actor-{uuid.uuid4()}",
         # Pin the model explicitly — never rely on the harness default.
         model={"bedrockModelConfig": {"modelId": model_id}},
         tools=tools,

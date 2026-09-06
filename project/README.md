@@ -18,6 +18,81 @@ There are a number of resources available to you to develop this application:
 
 You will create the harness, iterate on its system prompt, and then test it in various scenarios.
 
+## Student Submission Results
+
+This submission implements a complete, evaluated customer support chatbot using the **Amazon Bedrock AgentCore managed harness**.
+
+- **Model**: `us.amazon.nova-pro-v1:0`
+- **AWS Region**: `us-east-1`
+- **Submission Repository**: [SyedArmanAli2003/aws-c1-prompting-llm-reasoning-nd905-cd14762-project](https://github.com/SyedArmanAli2003/aws-c1-prompting-llm-reasoning-nd905-cd14762-project)
+
+### Core Architecture & Routing Behavior
+
+The system prompt (`project/starter/system_prompt.txt`) cleanly classifies incoming customer messages into three distinct routes:
+
+1. **Bug Report Route**:
+   - Collects `description`, `stepsToReproduce`, and `environment` across the conversation turns.
+   - Strictly enforces that the chatbot does **not** call the tool until all three fields exist.
+   - Once all required information is gathered, it invokes `bugreports___create_bug_report` via the AgentCore Gateway.
+   - Successfully persists the bug ticket to DynamoDB (`bug-report-tool-stack-bug-reports`).
+   - Returns the real DynamoDB ticket ID (e.g., `30780b15-7b3d-493e-a23c-7ff0e553620a`) to the customer.
+
+2. **FAQ / Platform Question Route**:
+   - Answers customer questions exclusively using the embedded FAQ (`online_shop_faq.md`) covering orders, shipping, returns, payment, and account support.
+   - For unsupported or uncovered questions (such as inquiries about student discounts), it strictly avoids fabricating information and politely redirects the customer to the human support hotline at `1-800-555-0199`.
+
+3. **Other Request Route**:
+   - Does not perform unrelated tasks (e.g., writing Python web scrapers, general trivia, code generation).
+   - Politely informs the customer that it cannot handle out-of-scope tasks and redirects to the human support hotline at `1-800-555-0199`.
+
+### Security & Guardrails
+
+- **Prompt-Injection Resistance**: Robust against adversarial instructions, jailbreak attempts, and internal system prompt extraction attempts.
+- **Strict Anti-Hallucination**: Does not reveal system prompt internals and does not fabricate FAQ facts or store policies.
+
+### Automated Testing (`harness-tests.json`)
+
+The automated evaluation suite contains 6 rigorous test cases covering all routes and edge cases:
+1. **Incomplete bug report**: Customer reports a checkout crash; assistant recognizes the bug report, acknowledges the issue without claiming a ticket was filed, and asks for missing reproduction steps and environment.
+2. **Return-policy FAQ**: Customer inquires about returns; assistant grounds response in the FAQ (30-day window, unused condition, original packaging).
+3. **Unsupported student discount**: Customer asks about student discounts; assistant states FAQ does not cover discounts without inventing policy and redirects to `1-800-555-0199`.
+4. **Unrelated web scraper**: Customer requests a Python scraper; assistant declines out-of-scope coding and redirects to `1-800-555-0199`.
+5. **Ambiguous short request**: Customer says "It broken"; assistant clarifies what is not working rather than guessing or fabricating details.
+6. **Prompt injection**: Malicious input attempts to override instructions and leak system prompt; assistant refuses and remains safely in customer support scope.
+
+### Bedrock Evaluation Results
+
+Automated evaluation was conducted using **Amazon Bedrock Evaluations** (LLM-as-a-judge / Bring-Your-Own-Inference):
+
+- **Bedrock Evaluation Job**: `support-chatbot-eval-final`
+- **Evaluation Job ARN**: `arn:aws:bedrock:us-east-1:673594910195:evaluation-job/b6q1cfp20xmp`
+- **Status**: `Completed`
+- **Metric**: `Builtin.Correctness`
+- **Correctness Score**: **1.00**
+- **JSONL Records**: `6`
+- **HARNESS_ERROR Count**: `0`
+
+> **Note on Evaluation Score**: All 6 records received a correctness score of 1.0 (100% across all evaluated prompts).
+
+### Implementation Evidence & Visual Verification
+
+All visual evidence screenshots are saved in the `screenshots/` directory:
+
+| Evidence Milestone | File Link | Description |
+|:---|:---|:---|
+| **Lambda Tool Test** | [lambda_test_full_evidence.png](../screenshots/lambda_test_full_evidence.png) | Successful standalone execution of `create_bug_report` Lambda in AWS Console. |
+| **DynamoDB Table Items** | [dynamodb_explore_table_items.png](../screenshots/dynamodb_explore_table_items.png) | DynamoDB explorer showing table items in `bug-report-tool-stack-bug-reports`. |
+| **AgentCore Gateway** | [agentcore_gateway_evidence.png](../screenshots/agentcore_gateway_evidence.png) | AgentCore Gateway in `READY` state with target `bugreports`. |
+| **AgentCore Harness** | [agentcore_harness_evidence.png](../screenshots/agentcore_harness_evidence.png) | Managed harness `support_chatbot` in `READY` status pinned to `us.amazon.nova-pro-v1:0`. |
+| **Multi-Turn Bug Chat** | [bug_report_chat_tool_call.png](../screenshots/bug_report_chat_tool_call.png) | Real conversation collecting bug details and invoking `bugreports___create_bug_report`. |
+| **Chatbot DynamoDB Ticket** | [chatbot_ticket_dynamodb.png](../screenshots/chatbot_ticket_dynamodb.png) | Real ticket `30780b15-7b3d-493e-a23c-7ff0e553620a` created by chatbot verified in DynamoDB. |
+| **Covered FAQ Question** | [faq_covered.png](../screenshots/faq_covered.png) | Chatbot accurately answering delivery and shipping questions from FAQ. |
+| **Unsupported FAQ Question** | [faq_unsupported.png](../screenshots/faq_unsupported.png) | Chatbot declining student discount query and redirecting to `1-800-555-0199`. |
+| **Other Request** | [other_request.png](../screenshots/other_request.png) | Chatbot politely refusing Python code request and redirecting to `1-800-555-0199`. |
+| **Eval Dataset JSONL** | [eval_dataset_jsonl.png](../screenshots/eval_dataset_jsonl.png) | Dataset generation producing 6 records with 0 harness errors. |
+| **S3 Dataset Upload** | [s3_eval_dataset.png](../screenshots/s3_eval_dataset.png) | `output_eval_dataset.jsonl` stored in S3 testing bucket. |
+| **Bedrock Evaluation Result** | [bedrock_evaluation_result.png](../screenshots/bedrock_evaluation_result.png) | Amazon Bedrock console showing evaluation job completed with 1.00 Correctness. |
+
 ## Getting Started
 
 ### Dependencies
@@ -144,37 +219,6 @@ To test your application you will do the following:
   ```
 
 Follow the steps in the [Testing and Evaluation](docs/testing.md) document to upload the dataset and create the evaluation job.
-
-## Submission & Evaluation Results
-
-**Student Repository**: [SyedArmanAli2003/aws-c1-prompting-llm-reasoning-nd905-cd14762-project](https://github.com/SyedArmanAli2003/aws-c1-prompting-llm-reasoning-nd905-cd14762-project)  
-**Foundation Model**: `us.amazon.nova-pro-v1:0`  
-**AWS Region**: `us-east-1`  
-**Overall Correctness Score**: **1.00 (100% across all 6 test cases)**
-
-### 1. Verification Highlights
-- **Real Chatbot Bug Report**: Created ticket ID `30780b15-7b3d-493e-a23c-7ff0e553620a` in DynamoDB table `bug-report-tool-stack-bug-reports` via `chat.py` tool call `bugreports___create_bug_report`.
-- **FAQ Handling**: Correctly answered shipping/delivery from FAQ; correctly refused unsupported query (student discount) and redirected to human support `1-800-555-0199`.
-- **Out-of-Scope Requests**: Correctly refused unrelated coding tasks and redirected to `1-800-555-0199`.
-- **Bedrock Evaluation**:
-  - Evaluation Job ARN: `arn:aws:bedrock:us-east-1:673594910195:evaluation-job/b6q1cfp20xmp`
-  - Input Dataset: `s3://udacity-agentic-engineer-c1-eval-673594910195/output_eval_dataset.jsonl`
-  - Metric: Built-in LLM-as-a-judge Correctness -> **1.00**
-
-### 2. Evidence Files
-All evidence screenshots are located in `screenshots/`:
-- `lambda_test_full_evidence.png`
-- `dynamodb_explore_table_items.png` / `dynamodb_ticket_evidence.png`
-- `agentcore_gateway_evidence.png`
-- `agentcore_harness_evidence.png`
-- `bug_report_chat_tool_call.png`
-- `chatbot_ticket_dynamodb.png`
-- `faq_covered.png`
-- `faq_unsupported.png`
-- `other_request.png`
-- `eval_dataset_jsonl.png`
-- `s3_eval_dataset.png`
-- `bedrock_evaluation_result.png`
 
 ## Cleanup
 
